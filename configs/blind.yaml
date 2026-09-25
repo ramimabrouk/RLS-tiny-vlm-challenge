@@ -1,0 +1,28 @@
+# E1 blind-baseline configuration: same model as baseline.yaml, but images
+# are replaced by zeros (or shuffled) to test whether the model actually
+# uses the image. See Project Brief, section 8 (E1).
+# The ONLY difference with baseline.yaml is data.image_mode (and the name).
+name: blind
+seed: 0
+
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  mlp_ratio: 4
+  dropout: 0.1
+  enc_channels: [32, 64, 128]
+  visual_attention: bidirectional
+
+data:
+  dir: data
+  num_workers: 0
+  image_mode: zeros          # <- the one changed variable
+
+train:
+  epochs: 30
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_steps: 200
+  grad_clip: 1.0

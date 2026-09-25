@@ -1,0 +1,26 @@
+# Main model configuration (architecture + training hyperparameters).
+# Referenced from the results table in README.md as configs/baseline.yaml.
+name: baseline
+seed: 0                      # overridden by --seed when running several seeds
+
+model:
+  d_model: 128
+  n_heads: 4                 # head dimension = 128 / 4 = 32
+  n_layers: 4
+  mlp_ratio: 4
+  dropout: 0.1
+  enc_channels: [32, 64, 128]   # 3 blocks -> 64 -> 32 -> 16 -> 8: an 8x8 grid = 64 visual tokens
+  visual_attention: bidirectional   # or "causal" (visual tokens only see earlier visual tokens)
+
+data:
+  dir: data
+  num_workers: 0             # ~2 CPU cores on Colab: measure before raising it
+  image_mode: none           # none | zeros | shuffle   (E1 blind baseline uses zeros)
+
+train:
+  epochs: 30
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_steps: 200
+  grad_clip: 1.0
