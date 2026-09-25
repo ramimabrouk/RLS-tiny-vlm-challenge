@@ -38,7 +38,7 @@ def test_attribute_report_counts_the_right_things():
 
 @pytest.mark.skipif(not DATA.exists(), reason="run generate_data.py first")
 def test_parser_reads_every_reference_word_perfectly():
-    words = torch.load(DATA)["words"]
+    words = torch.load(DATA, weights_only=True)["words"]
     for w in words:
         p = parse_word(w)
         rebuilt = p["size1"] + p["color1"] + p["shape1"]
