@@ -19,7 +19,29 @@ A training step (forward + loss + backward + AdamW step) on random uint8 images 
 Data loading is **outside** the timing (batch already on the device); `--include-transfer` puts the host-to-device copy
 inside. Say in your report which one you used.
 
-## Your analysis (write it yourself, from your own measurements)
+## Analysis
 
-- Why are the first iterations slower? (evidence: `warmup.csv`)
-- Where does the GPU stop being faster than the CPU, if anywhere, and why?
+**CPU throughput plateaus almost immediately** (19.4 -> 35.3 img/s from batch 1 to 16,
+then flat with no further gain from 16 to 256: 35.3 -> 35.1 -> 33.8 img/s). A single CPU
+core saturates its compute quickly; larger batches only add queuing, not parallelism.
+
+**GPU throughput scales dramatically with batch size**: 62.6 img/s at batch 1, jumping to
+1117 img/s at batch 16 (near-linear scaling for a 16x larger batch), then continuing to
+grow to 1538-1542 img/s at batch 64-256 before flattening. Small batches leave most of the
+GPU's parallel compute idle; larger batches are needed to fill it.
+
+**The GPU only clearly wins once batch size is large enough**: at batch 1, GPU (62.6 img/s)
+is only ~3.2x faster than CPU (19.4 img/s), and its "first iteration" overhead is much
+higher (469 ms vs 109 ms) — a single-image GPU call is not obviously worth it. The GPU's
+real advantage appears at batch 16 and above, where it is roughly 32x to 46x faster than
+CPU (1542.5 / 33.8 = 45.6x at batch 256).
+
+**Warm-up cost is real and correctly excluded from steady-state measurements**: the first
+CPU iteration at batch 256 took 8408 ms, comparable to several steady-state iterations
+combined. On GPU the same relative cost is much smaller (180 ms at batch 256) because most
+CPU "first iteration" cost is genuine compute, while GPU's is mostly one-time CUDA context
+and kernel setup — which is why `torch.cuda.synchronize()` before/after timing matters:
+without it, this setup cost would silently leak into whichever measurement happened to run
+first.
+
+Hardware: Google Colab, Tesla T4 GPU, single CPU core (see `hardware.txt` for exact specs).
