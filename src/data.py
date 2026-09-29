@@ -23,7 +23,7 @@ class ShapeScenes(Dataset):
 
     def __init__(self, split: str, data_dir: str | Path = "data", limit: int | None = None):
         assert split in SPLITS, f"split must be one of {SPLITS}"
-        blob = torch.load(Path(data_dir) / f"{split}.pt", map_location="cpu")
+        blob = torch.load(Path(data_dir) / f"{split}.pt", map_location="cpu", weights_only=True)
         self.images = blob["images"]  # (N, 3, 64, 64) uint8, values 0..255
         self.words = blob["words"]  # list[str] of length N
         assert len(self.images) == len(self.words)
