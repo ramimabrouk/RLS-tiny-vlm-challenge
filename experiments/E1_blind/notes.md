@@ -37,10 +37,54 @@ letter/spelling patterns instead, which would be a serious problem.
 `data.image_mode: zeros` (`configs/blind.yaml`). Everything else identical.
 
 ## 5. Repetitions
-_Seeds, hardware, commands (train + evaluate)._
+Seed: 0 (will add seeds 1 and 2 for the mean ± std comparison, matching the baseline).
+Hardware: Google Colab, Tesla T4 GPU.
+Commands:
+    python -m src.train --config configs/blind.yaml --seed 0 --device cuda --out-dir runs/blind_seed0 --resume
+    python -m src.evaluate --checkpoint runs/blind_seed0/best.pt --split test --device cuda
 
 ## 6. Result
-_Per-attribute accuracy, exact match and (teacher-forced) letter accuracy, blind vs baseline, mean ± std._
+
+Seed 0 only so far (mean ± std pending seeds 1–2).
+
+| Metric | Real model (baseline) | Blind model (zeros) |
+|---|---|---|
+| Exact match | 70.63% ± 0.28% | 1.65% |
+| Color accuracy | 73.84% ± 0.54% | 20.10% |
+| Shape accuracy | 74.64% ± 0.61% | 20.63% |
+| Relation accuracy | 43.14% ± 0.64% | 0.00% |
+| n_objects accuracy | 100% | 49.00% |
+| Letter accuracy (teacher-forced) | 98.83% | 87.89% |
 
 ## 7. Interpretation
-_What is the gap between letter accuracy and attribute accuracy, and what does it teach?_
+
+Letter accuracy dropped only modestly (98.83% -> 87.89%), confirming the hypothesis:
+spelling a known word does not require seeing the image, so this metric stays high even
+for a model that is completely blind. This is the clearest evidence that letter accuracy
+measures "can it spell," not "can it see," and should never be used alone to judge whether
+a model understands an image.
+
+Every other metric collapsed far more than predicted, and the pattern is not uniform: the
+FIRST object's color and shape accuracy (30.4% and 31.2%) landed close to my 30% prediction,
+but relation, and every attribute of the SECOND object, dropped to exactly 0%. The blind
+model apparently learned to produce a plausible-looking first object from word-frequency
+patterns alone (e.g. "red" and "circle" are common early tokens), but never learned to
+produce a correct second object or relation without any image signal to work from. This
+is why my n_objects prediction (70%) was far too optimistic: the real result (49%) is
+indistinguishable from a coin flip, meaning the model cannot reliably tell whether a scene
+has one or two objects without the image, even though two-object words are much longer.
+
+Exact match (1.65%) is consistent with this: since roughly half of all scenes have two
+objects, and the blind model gets 0% of every two-object attribute right, only single-object
+scenes contribute to correct exact matches at all, and even those require the first three
+attributes (size, color, shape) all correct simultaneously.
+
+This result directly supports the finding from test_heldout: the real (non-blind) model
+clearly relies on the image for shape and color, since removing the image drops those
+metrics from ~74% to ~20-31%, and drops relation and second-object attributes to exactly
+zero. The earlier test_heldout finding (that shape accuracy specifically collapses on novel
+color-shape pairs) is therefore not evidence that the model ignores the image — it is
+evidence of a narrower shortcut (using color to guess shape) layered on top of a model that
+genuinely does use the image for its core predictions. A model with zero image signal at
+all performs dramatically worse across the board, which rules out the more serious
+possibility that the real model was ignoring the image entirely.
