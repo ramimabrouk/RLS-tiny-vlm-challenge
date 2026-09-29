@@ -16,7 +16,7 @@ A ~1.1 M-parameter vision-language model: a CNN encodes a 64×64 image into 64 v
 | Main model | `configs/baseline.yaml` | Color / Shape / Size / Relation, test | 73.84% / 74.64% / 84.13% / 43.14% (n=3) | Relation (spatial reasoning) is the clear weak point; everything else is solid. |
 | Generalization | `configs/baseline.yaml`, test_heldout | Exact match | 30.43% ± 13.71% (n=3) | Large drop on unseen color-shape pairs, with high seed variance — model partly relies on color to predict shape rather than true geometry. |
 | E1 blind baseline | `configs/blind.yaml` | Exact match / Color / Shape / Relation, test | 1.65% / 20.10% / 20.63% / 0.00% (n=1) | Confirms the real model genuinely uses the image — a blind model collapses almost entirely, especially on 2-object scenes. |
-| S1 throughput | batch 64, Tesla T4 | images/s | _todo — run below_ | _todo_ |
+| S1 throughput | batch 256, Tesla T4 vs CPU | images/s | GPU: 1542.5 img/s · CPU: 33.8 img/s (45.6x speedup) | GPU advantage grows with batch size; at batch 1 the GPU is barely faster than CPU. |
 ## Reproduce
 
 ```bash
